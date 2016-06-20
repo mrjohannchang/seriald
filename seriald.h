@@ -11,6 +11,8 @@
 
 #define TTY_RD_SZ 256
 
+extern char ubus_path[];
+
 struct tty_q {
 	int len;
 	char buff[TTY_Q_SZ];

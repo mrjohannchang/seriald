@@ -24,10 +24,10 @@ static void seriald_ubus_send_event(const char *json)
 		return;
 	}
 
-	if (ubus_send_event(ubus_ctx, "serial", b.head)) {
+	if (ubus_send_event(ubus_ctx, ubus_path, b.head)) {
 		ubus_free(ubus_ctx);
 		ubus_ctx = ubus_connect(ubus_sock);
-		ubus_send_event(ubus_ctx, "serial", b.head);
+		ubus_send_event(ubus_ctx, ubus_path, b.head);
 	}
 }
 

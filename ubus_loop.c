@@ -36,10 +36,10 @@ static struct ubus_method seriald_object_methods[] = {
 };
 
 static struct ubus_object_type seriald_object_type =
-	UBUS_OBJECT_TYPE("serial", seriald_object_methods);
+	UBUS_OBJECT_TYPE(ubus_path, seriald_object_methods);
 
 static struct ubus_object seriald_object = {
-	.name = "serial",
+	.name = ubus_path,
 	.type = &seriald_object_type,
 	.methods = seriald_object_methods,
 	.n_methods = ARRAY_SIZE(seriald_object_methods),

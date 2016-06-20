@@ -59,6 +59,8 @@ static struct {
 	.socket = NULL, /* the library fall back to default socket when it is NULL */
 };
 
+char ubus_path[sizeof("serial.")+sizeof(opts.port)];
+
 static void show_usage(void);
 static void parse_args(int argc, char *argv[]);
 static void deadly_handler(int signum);
@@ -97,7 +99,7 @@ void fatal(const char *format, ...)
 
 	va_start(args, format);
 	len = vsnprintf(buf, sizeof(buf), format, args);
-	buf[sizeof(buf) - 1] = '\0';
+	buf[sizeof(buf)-1] = '\0';
 	va_end(args);
 	
 	s = "\r\nFATAL: ";
@@ -170,7 +172,7 @@ static void parse_args(int argc, char *argv[])
 	}
 
 	strncpy(opts.port, argv[optind], sizeof(opts.port) - 1);
-	opts.port[sizeof(opts.port) - 1] = '\0';
+	opts.port[sizeof(opts.port)-1] = '\0';
 }
 
 static void deadly_handler(int signum)
@@ -340,6 +342,7 @@ int main(int argc, char *argv[])
 
 	parse_args(argc, argv);
 	register_signal_handlers();
+	sprintf(ubus_path, "serial.%s", basename(opts.port));
 
 	r = pipe2(ubus_pipefd, O_CLOEXEC);
 	if (r < 0) fatal("cannot create pipe to ubus: %s", strerror(errno));
