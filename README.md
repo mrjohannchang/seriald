@@ -1,21 +1,37 @@
 # seriald
 
-seriald is a high performance deamon which manage a serial port as well as provides the OpenWrt ubus interface for IPC.
+seriald is a high performance deamon which manage a serial port as well as provides the OpenWrt ubus interface for IPC. The binary size is only 21 kB.
 
 ## Usage
+
+### Run daemon
+
+```
+seriald /dev/ttyS0
+```
+
+Can run multiple daemons on different device nodes.
+
+#### Options
+
+See
+
+```
+seriald -h
+```
 
 ### Read from serial port
 
 Command:
 
 ```
-ubus listen serial
+ubus listen serial.ttyS0
 ```
 
 Result:
 
 ```
-{ "serial": {"data":"<incoming message>"} }
+{ "serial.ttyS0": {"data":"<incoming message>"} }
 ```
 
 `<incoming message>` is a line read from the serial port. All the `CR` (`\r`) and `LF` (`\n`) characters will be eliminated from it.
@@ -23,7 +39,7 @@ Result:
 ### Write to serial port
 
 ```
-ubus call serial send '{"data": "<outgoing message>"}'
+ubus call serial.ttyS0 send '{"data": "<outgoing message>"}'
 ```
 
 `data` is a fixed attribute. To send a message to the serial port, replace `<outgoing message>` with the message you want to send.
