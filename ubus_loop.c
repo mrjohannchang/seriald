@@ -14,7 +14,7 @@
 #include "ubus_loop.h"
 
 static struct ubus_context *ubus_ctx = NULL;
-static const char *ubus_path;
+static const char *ubus_sock;
 
 static void seriald_ubus_add_fd(void);
 static void seriald_ubus_connection_lost_cb(struct ubus_context *ctx);
@@ -78,7 +78,7 @@ static void seriald_ubus_reconnect_timer(struct uloop_timeout *timeout)
 	};
 	int t = 2;
 
-	if (ubus_reconnect(ubus_ctx, ubus_path)) {
+	if (ubus_reconnect(ubus_ctx, ubus_sock)) {
 		DPRINTF("failed to reconnect, trying again in %d seconds\n", t);
 		uloop_timeout_set(&retry, t * 1000);
 		return;
@@ -100,14 +100,14 @@ static void seriald_ubus_add_fd(void)
 			fcntl(ubus_ctx->sock.fd, F_GETFD) | FD_CLOEXEC);
 }
 
-int seriald_ubus_loop_init(const char *path)
+int seriald_ubus_loop_init(const char *sock)
 {
 	int r;
 
 	uloop_init();
-	ubus_path = path;
+	ubus_sock = sock;
 
-	ubus_ctx = ubus_connect(path);
+	ubus_ctx = ubus_connect(sock);
 	if (!ubus_ctx) {
 		DPRINTF("cannot connect to ubus\n");
 		return -EIO;

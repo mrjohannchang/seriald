@@ -67,7 +67,7 @@ static void ubus_send_event_line_parser(const int n, const char *buff_rd)
 	}
 }
 
-void seriald_ubus_run(const char *path)
+void seriald_ubus_run(const char *sock)
 {
 	fd_set rdset;
 	int r;
@@ -76,7 +76,7 @@ void seriald_ubus_run(const char *path)
 	int max_fd;
 	eventfd_t efd_value;
 
-	ubus_sock = path;
+	ubus_sock = sock;
 	max_fd = (efd_signal > ubus_pipefd[0]) ? efd_signal : ubus_pipefd[0];
 
 	ubus_ctx = ubus_connect(ubus_sock);
