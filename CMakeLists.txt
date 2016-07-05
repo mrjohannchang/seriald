@@ -12,7 +12,7 @@ INCLUDE_DIRECTORIES(${ubox_include_dir})
 FIND_LIBRARY(blob_library NAMES blobmsg_json)
 FIND_LIBRARY(ubus NAMES ubus)
 
-ADD_EXECUTABLE(seriald seriald.c strutils.c term.c fdio.c ubus.c ubus_loop.c)
+ADD_EXECUTABLE(seriald seriald.c term.c fdio.c ubus.c ubus_loop.c)
 TARGET_LINK_LIBRARIES(seriald ${ubus} ${ubox_library} ${blob_library})
 
 INSTALL(TARGETS seriald

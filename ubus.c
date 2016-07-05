@@ -5,11 +5,10 @@
 #include <unistd.h>
 
 #include "seriald.h"
-#include "strutils.h"
 #include "ubus.h"
 
 static void seriald_ubus_send_event(const char *json);
-static void ubus_send_event_line_parser(const int n, const char *buff_rd);
+static void ubus_send_event_line_splitter(const int n, const char *buff_rd);
 
 static struct ubus_context *ubus_ctx = NULL;
 static struct blob_buf b;
@@ -31,39 +30,29 @@ static void seriald_ubus_send_event(const char *json)
 	}
 }
 
-static void ubus_send_event_line_parser(const int n, const char *buff_rd)
+static void ubus_send_event_line_splitter(const int n, const char *buff_rd)
 {
-	static char line_buff[TTY_RD_SZ+1] = "";
+	static char buff[TTY_RD_SZ*2+1] = "";
+	static int buff_len = 0;
 	const char *p;
-	const char *pp;
-	char buff[TTY_RD_SZ+1] = "";
 
-	/* buff_rd isn't null-terminated */
-	strncat(buff, buff_rd, n);
+	p = buff_rd;
 
-	pp = buff;
-
-	while ((p = strchr(pp, '\n'))) {
-		if (strlen(line_buff) + p - pp > TTY_RD_SZ) {
-			seriald_ubus_send_event(line_buff);
-			*line_buff = '\0';
-		}
-
-		strncat(line_buff, pp, p - pp);
-		strchrdel(line_buff, '\r');
-		seriald_ubus_send_event(line_buff);
-		*line_buff = '\0';
-
-		pp = p + 1;
-	}
-
-	if (pp) {
-		if (strlen(line_buff) + n - (pp - buff) > TTY_RD_SZ) {
-			seriald_ubus_send_event(line_buff);
-			*line_buff = '\0';
-		}
-		strncat(line_buff, pp, n - (pp - buff));
-		strchrdel(line_buff, '\r');
+	while (p - buff_rd < n) {
+			if (buff_len == sizeof(buff) - 1) {
+				seriald_ubus_send_event(buff);
+				*buff = '\0';
+				buff_len = 0;
+			}
+			if (*p && *p != '\r' && *p != '\n') {
+				buff[buff_len] = *p;
+				buff[++buff_len] = '\0';
+			} else if ((!*p || *p == '\n') && buff_len > 0) {
+				seriald_ubus_send_event(buff);
+				*buff = '\0';
+				buff_len = 0;
+			}
+			p++;
 	}
 }
 
@@ -72,7 +61,7 @@ void seriald_ubus_run(const char *sock)
 	fd_set rdset;
 	int r;
 	int n;
-	char buff_rd[TTY_RD_SZ];
+	char buff_rd[TTY_RD_SZ*2];
 	int max_fd;
 	eventfd_t efd_value;
 
@@ -106,7 +95,7 @@ void seriald_ubus_run(const char *sock)
 				if (errno != EAGAIN && errno != EWOULDBLOCK)
 					fatal("read from pipe failed: %s", strerror(errno));
 			} else {
-				ubus_send_event_line_parser(n, buff_rd);
+				ubus_send_event_line_splitter(n, buff_rd);
 			}
 		}
 

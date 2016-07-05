@@ -14,7 +14,6 @@
 
 #include "fdio.h"
 #include "seriald.h"
-#include "strutils.h"
 #include "term.h"
 #include "ubus.h"
 #include "ubus_loop.h"
@@ -66,7 +65,7 @@ static void parse_args(int argc, char *argv[]);
 static void deadly_handler(int signum);
 static void register_signal_handlers(void);
 static void loop(void);
-static void tty_read_line_parser(const int n, const char *buff_rd);
+static void tty_read_line_splitter(const int n, const char *buff_rd);
 static void tty_read_line_cb(const char *line);
 int main(int argc, char *argv[]);
 
@@ -251,7 +250,7 @@ static void loop(void)
 				if (errno != EAGAIN && errno != EWOULDBLOCK)
 					fatal("read from term failed: %s", strerror(errno));
 			} else {
-				tty_read_line_parser(n, buff_rd);
+				tty_read_line_splitter(n, buff_rd);
 			}
 		}
 
@@ -277,39 +276,29 @@ static void loop(void)
 	}
 }
 
-static void tty_read_line_parser(const int n, const char *buff_rd)
+static void tty_read_line_splitter(const int n, const char *buff_rd)
 {
-	static char line_buff[TTY_RD_SZ+1] = "";
+	static char buff[TTY_RD_SZ+1] = "";
+	static int buff_len = 0;
 	const char *p;
-	const char *pp;
-	char buff[TTY_RD_SZ+1] = "";
 
-	/* buff_rd isn't null-terminated */
-	strncat(buff, buff_rd, n);
+	p = buff_rd;
 
-	pp = buff;
-
-	while ((p = strchr(pp, '\n'))) {
-		if (strlen(line_buff) + p - pp > TTY_RD_SZ) {
-			tty_read_line_cb(line_buff);
-			*line_buff = '\0';
-		}
-
-		strncat(line_buff, pp, p - pp);
-		strchrdel(line_buff, '\r');
-		tty_read_line_cb(line_buff);
-		*line_buff = '\0';
-
-		pp = p + 1;
-	}
-
-	if (pp) {
-		if (strlen(line_buff) + n - (pp - buff) > TTY_RD_SZ) {
-			tty_read_line_cb(line_buff);
-			*line_buff = '\0';
-		}
-		strncat(line_buff, pp, n - (pp - buff));
-		strchrdel(line_buff, '\r');
+	while (p - buff_rd < n) {
+			if (buff_len == sizeof(buff) - 1) {
+				tty_read_line_cb(buff);
+				*buff = '\0';
+				buff_len = 0;
+			}
+			if (*p && *p != '\r' && *p != '\n') {
+				buff[buff_len] = *p;
+				buff[++buff_len] = '\0';
+			} else if ((!*p || *p == '\n') && buff_len > 0) {
+				tty_read_line_cb(buff);
+				*buff = '\0';
+				buff_len = 0;
+			}
+			p++;
 	}
 }
 
