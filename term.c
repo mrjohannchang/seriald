@@ -7,7 +7,7 @@
  * Nick Patavalis (npat@inaccessnetworks.com)
  *
  * originaly by Pantelis Antoniou (panto@intranet.gr), Nick Patavalis
- *    
+ *
  * Documentation can be found in the header file "term.h".
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
- * USA 
+ * USA
  *
  * $Id$
  */
@@ -410,7 +410,7 @@ term_lib_init (void)
 				} while ( r < 0 && errno == EINTR );
 				if ( r < 0 ) {
 					char *tname;
- 
+
 					tname = ttyname(term.fd[i]);
 					if ( ! tname ) tname = "UNKNOWN";
 					fprintf(stderr, "%s: reset failed for dev %s: %s\n",
@@ -424,7 +424,7 @@ term_lib_init (void)
 				term.fd[i] = -1;
 			if ( atexit(term_exitfunc) != 0 ) {
 				term_errno = TERM_EATEXIT;
-				rval = -1; 
+				rval = -1;
 				break;
 			}
 			/* ok. term struct is now initialized. */
@@ -497,7 +497,7 @@ term_remove(int fd)
 		
 		do { /* dummy */
 			r = tcflush(term.fd[i], TCIOFLUSH);
-			if ( r < 0 ) { 
+			if ( r < 0 ) {
 				term_errno = TERM_EFLUSH;
 				rval = -1;
 				break;
@@ -549,7 +549,7 @@ term_replace (int oldfd, int newfd)
 
 	do { /* dummy */
 
-		i = term_find(oldfd); 
+		i = term_find(oldfd);
 		if ( i < 0 ) {
 			rval = -1;
 			break;
@@ -789,7 +789,7 @@ term_set_baudrate (int fd, int baudrate)
 	return rval;
 }
 
-int 
+int
 term_get_baudrate (int fd, int *ispeed)
 {
 	speed_t code;
@@ -833,7 +833,7 @@ term_get_baudrate (int fd, int *ispeed)
 /***************************************************************************/
 
 int
-term_set_parity (int fd, enum parity_e parity) 
+term_set_parity (int fd, enum parity_e parity)
 {
 	int rval, i;
 	struct termios *tiop;
@@ -867,7 +867,7 @@ term_set_parity (int fd, enum parity_e parity)
 			tiop->c_cflag |= PARENB | CMSPAR;
 			break;
 		case P_NONE:
-			tiop->c_cflag &= ~(PARENB | PARODD | CMSPAR); 
+			tiop->c_cflag &= ~(PARENB | PARODD | CMSPAR);
 			break;
 		default:
 			term_errno = TERM_EPARITY;
@@ -1192,8 +1192,8 @@ term_set_hupcl (int fd, int on)
 int
 term_set(int fd,
 		 int raw,
-		 int baud, 
-		 enum parity_e parity, 
+		 int baud,
+		 enum parity_e parity,
 		 int databits, int stopbits,
 		 enum flowcntrl_e fc,
 		 int local, int hup_close)
@@ -1248,7 +1248,7 @@ term_set(int fd,
 			
 		} while (0);
 
-		if ( rval < 0 ) { 
+		if ( rval < 0 ) {
 			if ( i < 0 )
 				/* new addition. must be removed */
 				term.fd[ni] = -1;
@@ -1393,7 +1393,7 @@ term_lower_dtr(int fd)
 	do { /* dummy */
 
 		i = term_find(fd);
-		if ( i < 0 ) { 
+		if ( i < 0 ) {
 			rval = -1;
 			break;
 		}
@@ -1447,13 +1447,13 @@ term_get_mctl (int fd)
 	do { /* dummy */
 
 		i = term_find(fd);
-		if ( i < 0 ) { 
+		if ( i < 0 ) {
 			mctl = -1;
 			break;
 		}
 
 #ifdef __linux__
-		{ 
+		{
 			int r, pmctl;
 			
 			r = ioctl(fd, TIOCMGET, &pmctl);
