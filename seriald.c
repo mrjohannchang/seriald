@@ -62,11 +62,10 @@ char ubus_path[sizeof("serial.")+sizeof(opts.port)];
 
 static void show_usage(void);
 static void parse_args(int argc, char *argv[]);
-static void deadly_handler(int signum);
+static void dead_handler(int signum);
 static void register_signal_handlers(void);
 static void loop(void);
-static void tty_read_line_splitter(const int n, const char *buff_rd);
-static void tty_read_line_cb(const char *line);
+static void reflect_to_ubus(int length, const char *buff_rd);
 int main(int argc, char *argv[]);
 
 static void show_usage()
@@ -174,7 +173,7 @@ static void parse_args(int argc, char *argv[])
 	opts.port[sizeof(opts.port)-1] = '\0';
 }
 
-static void deadly_handler(int signum)
+static void dead_handler(int signum)
 {
 	DPRINTF("seriald is signaled with TERM\n");
 	if (!sig_exit) {
@@ -190,7 +189,7 @@ static void register_signal_handlers(void)
 	struct sigaction exit_action, ign_action;
 
 	/* Set up the structure to specify the exit action. */
-	exit_action.sa_handler = deadly_handler;
+	exit_action.sa_handler = dead_handler;
 	sigemptyset (&exit_action.sa_mask);
 	exit_action.sa_flags = 0;
 
@@ -250,7 +249,7 @@ static void loop(void)
 				if (errno != EAGAIN && errno != EWOULDBLOCK)
 					fatal("read from term failed: %s", strerror(errno));
 			} else {
-				tty_read_line_splitter(n, buff_rd);
+				reflect_to_ubus(n, buff_rd);
 			}
 		}
 
@@ -276,51 +275,20 @@ static void loop(void)
 	}
 }
 
-static void tty_read_line_splitter(const int n, const char *buff_rd)
+static void reflect_to_ubus(int length, const char *buff_rd)
 {
-	static char buff[TTY_RD_SZ+1] = "";
-	static int buff_len = 0;
-	const char *p;
+	char *p;
+	int n;
 
 	p = buff_rd;
 
-	while (p - buff_rd < n) {
-			if (buff_len == sizeof(buff) - 1) {
-				tty_read_line_cb(buff);
-				*buff = '\0';
-				buff_len = 0;
-			}
-			if (*p && *p != '\r' && *p != '\n') {
-				buff[buff_len] = *p;
-				buff[++buff_len] = '\0';
-			} else if ((!*p || *p == '\n') && buff_len > 0) {
-				tty_read_line_cb(buff);
-				*buff = '\0';
-				buff_len = 0;
-			}
-			p++;
-	}
-}
-
-static void tty_read_line_cb(const char *line)
-{
-	char format[] = "{\"data\": \"%s\"}\n";
-	char json[sizeof(format)+TTY_RD_SZ];
-	char *p;
-	int n;
-	int sz;
-
-	sprintf(json, format, line);
-	p = json;
-	sz = strlen(json);
-
-	while (sz > 0) {
+	while (length > 0) {
 		do {
-			n = write(ubus_pipefd[1], p, sz);
+			n = write(ubus_pipefd[1], p, length);
 		} while (n < 0 && errno == EINTR);
-		if (n <= 0) fatal("write to pipe failed: %s", strerror(errno));
+		if (n <= 0) fatal("write to ubus failed: %s", strerror(errno));
 		p += n;
-		sz -= n;
+		length -= n;
 	}
 }
 
@@ -336,7 +304,7 @@ int main(int argc, char *argv[])
 	r = pipe2(ubus_pipefd, O_CLOEXEC);
 	if (r < 0) fatal("cannot create pipe to ubus: %s", strerror(errno));
 
-	/* Seems like you cannot have multiple ubus connections in single process. */
+	/* Seems like we cannot have multiple ubus connections in a single process. */
 	/* So we fork. */
 	switch(fork()) {
 		case 0:
@@ -348,7 +316,7 @@ int main(int argc, char *argv[])
 			seriald_ubus_run(opts.socket);
 			return EXIT_SUCCESS;
 		case -1:
-			fatal("cannot fork ubus_event_loop");
+			fatal("cannot fork for ubus_event_loop");
 	}
 
 	close(ubus_pipefd[0]);

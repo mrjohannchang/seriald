@@ -7,14 +7,13 @@
 #include "seriald.h"
 #include "ubus.h"
 
-static void seriald_ubus_send_event(const char *json);
-static void ubus_send_event_line_splitter(const int n, const char *buff_rd);
+static void seriald_ubus_send_event(const int length, const char *data);
 
 static struct ubus_context *ubus_ctx = NULL;
 static struct blob_buf b;
 static const char *ubus_sock;
 
-static void seriald_ubus_send_event(const char *json)
+static void seriald_ubus_send_event(const int length, const char *data)
 {
 	blob_buf_init(&b, 0);
 
@@ -27,32 +26,6 @@ static void seriald_ubus_send_event(const char *json)
 		ubus_free(ubus_ctx);
 		ubus_ctx = ubus_connect(ubus_sock);
 		ubus_send_event(ubus_ctx, ubus_path, b.head);
-	}
-}
-
-static void ubus_send_event_line_splitter(const int n, const char *buff_rd)
-{
-	static char buff[TTY_RD_SZ*2+1] = "";
-	static int buff_len = 0;
-	const char *p;
-
-	p = buff_rd;
-
-	while (p - buff_rd < n) {
-			if (buff_len == sizeof(buff) - 1) {
-				seriald_ubus_send_event(buff);
-				*buff = '\0';
-				buff_len = 0;
-			}
-			if (*p && *p != '\r' && *p != '\n') {
-				buff[buff_len] = *p;
-				buff[++buff_len] = '\0';
-			} else if ((!*p || *p == '\n') && buff_len > 0) {
-				seriald_ubus_send_event(buff);
-				*buff = '\0';
-				buff_len = 0;
-			}
-			p++;
 	}
 }
 
@@ -95,7 +68,7 @@ void seriald_ubus_run(const char *sock)
 				if (errno != EAGAIN && errno != EWOULDBLOCK)
 					fatal("read from pipe failed: %s", strerror(errno));
 			} else {
-				ubus_send_event_line_splitter(n, buff_rd);
+				seriald_ubus_send_event(n, buff_rd);
 			}
 		}
 

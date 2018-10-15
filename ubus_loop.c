@@ -20,7 +20,7 @@ static void seriald_ubus_add_fd(void);
 static void seriald_ubus_connection_lost_cb(struct ubus_context *ctx);
 static void seriald_ubus_reconnect_timer(struct uloop_timeout *timeout);
 static int seriald_send_data(struct ubus_context *ctx, struct ubus_object *obj,
-		struct ubus_request_data *req, const char *method, struct blob_attr *msg);
+struct ubus_request_data *req, const char *method, struct blob_attr *msg);
 
 enum {
 	DATA_DATA,
