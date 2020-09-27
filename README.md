@@ -1,6 +1,6 @@
 # seriald
 
-seriald is a high performance deamon which manage a serial port as well as provides the OpenWrt ubus interface for IPC. The binary size is only 21 kB.
+seriald is a high performance deamon which manages a serial port as well as provides the OpenWrt ubus interface for IPC. The binary size is only 21 kB.
 
 ## Usage
 
